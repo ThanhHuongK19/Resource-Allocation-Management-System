@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./BE
+    container_name: rams-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/resource_allocation
+      SPRING_DATASOURCE_USERNAME: rams
+      SPRING_DATASOURCE_PASSWORD: rams_password
+      SERVER_PORT: 8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rams-postgres
+    environment:
+      POSTGRES_DB: resource_allocation
+      POSTGRES_USER: rams
+      POSTGRES_PASSWORD: rams_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - rams_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rams -d resource_allocation"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rams_postgres_data:

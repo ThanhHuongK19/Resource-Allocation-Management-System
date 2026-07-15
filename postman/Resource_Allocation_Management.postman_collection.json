@@ -1,0 +1,146 @@
+{
+  "info": {
+    "name": "Resource Allocation Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    }
+  ],
+  "item": [
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EMP010\",\n  \"fullName\": \"Nguyen Van Demo\",\n  \"email\": \"demo@company.com\",\n  \"role\": \"Java Developer\",\n  \"department\": \"FSOFT-Q1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Employees",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees" }
+        },
+        {
+          "name": "Get Employee Workload",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees/1/workload" }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/projects",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectCode\": \"PAY\",\n  \"projectName\": \"Payment Platform\",\n  \"customer\": \"Acme Corp\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2026-12-31\",\n  \"status\": \"ACTIVE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Projects",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projects" }
+        }
+      ]
+    },
+    {
+      "name": "Allocations",
+      "item": [
+        {
+          "name": "Create Allocation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/allocations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 2,\n  \"projectId\": 2,\n  \"allocationPercent\": 50,\n  \"roleInProject\": \"Backend Developer\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2026-12-31\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reject Over 100%",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/allocations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 3,\n  \"allocationPercent\": 90,\n  \"roleInProject\": \"Backend Developer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Allocations",
+          "request": { "method": "GET", "url": "{{baseUrl}}/allocations" }
+        },
+        {
+          "name": "Update Allocation",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/allocations/1",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"projectId\": 1,\n  \"allocationPercent\": 45,\n  \"roleInProject\": \"Backend Developer\",\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-12-31\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports and AI",
+      "item": [
+        {
+          "name": "Utilization Report",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/utilization" }
+        },
+        {
+          "name": "Available Resources",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/available?minimumAvailable=50" }
+        },
+        {
+          "name": "Overloaded Employees",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/overloaded" }
+        },
+        {
+          "name": "AI Recommendation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/ai/recommendations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleKeyword\": \"Java\",\n  \"minimumAvailable\": 50\n}"
+            }
+          }
+        },
+        {
+          "name": "AI Risk Detection",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/ai/risk-detection",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleKeyword\": \"Java\",\n  \"neededCount\": 2,\n  \"minimumAvailable\": 50\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
