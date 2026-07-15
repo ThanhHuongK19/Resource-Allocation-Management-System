@@ -26,6 +26,7 @@ import { EmployeesView } from "../features/employees/EmployeesView";
 import { ProjectsView } from "../features/projects/ProjectsView";
 import { AllocationsView } from "../features/allocations/AllocationsView";
 import { ReportsView } from "../features/reports/ReportsView";
+import { RiskView } from "../features/ai/RiskView";
 import {
   allocColor,
   allocLabel,
@@ -43,6 +44,7 @@ import type {
 } from "../types/resource";
 
 export default function App() {
+  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8081";
   const [view, setView] = useState<View>("dashboard");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -104,8 +106,41 @@ export default function App() {
 
   const addEmployee = () => {
     if (!newEmp.name.trim()) return;
-    // create locally; edit feature removed
-    setEmployees((p) => [...p, { id: uid(), ...newEmp }]);
+    // persist to backend
+    (async () => {
+      try {
+        const employeeCode = `EMP${Math.floor(Math.random() * 10000)}`;
+        const email =
+          (newEmp.name || "user").split(" ").join(".").toLowerCase() +
+          "@example.com";
+        const body = {
+          employeeCode,
+          fullName: newEmp.name,
+          email,
+          role: newEmp.role,
+          department: newEmp.department,
+        };
+        const res = await fetch(`${API_BASE}/employees`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Failed to create employee");
+        const json = await res.json();
+        setEmployees((p) => [
+          ...p,
+          {
+            id: String(json.id),
+            name: json.fullName,
+            role: json.role,
+            department: json.department,
+          },
+        ]);
+      } catch (e) {
+        // fallback to local add
+        setEmployees((p) => [...p, { id: uid(), ...newEmp }]);
+      }
+    })();
     setNewEmp({ name: "", role: "", department: "Engineering" });
     setShowAddEmp(false);
   };
@@ -117,8 +152,46 @@ export default function App() {
 
   const addProject = () => {
     if (!newProj.name.trim()) return;
-    // create locally; edit feature removed
-    setProjects((p) => [...p, { id: uid(), ...newProj }]);
+    (async () => {
+      try {
+        const projectCode =
+          newProj.code || `P${Math.floor(Math.random() * 10000)}`;
+        const statusMap: Record<string, string> = {
+          Active: "ACTIVE",
+          Planning: "PLANNING",
+          Completed: "COMPLETED",
+        };
+        const status = statusMap[newProj.status as any as string] || "ACTIVE";
+        const body = {
+          projectCode,
+          projectName: newProj.name,
+          customer: newProj.client || "Unknown",
+          startDate: null,
+          endDate: null,
+          status,
+        };
+        const res = await fetch(`${API_BASE}/projects`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Failed to create project");
+        const json = await res.json();
+        setProjects((p) => [
+          ...p,
+          {
+            id: String(json.id),
+            name: json.projectName,
+            code: json.projectCode,
+            client: json.customer,
+            status: json.status || "ACTIVE",
+            color: newProj.color,
+          },
+        ]);
+      } catch (e) {
+        setProjects((p) => [...p, { id: uid(), ...newProj }]);
+      }
+    })();
     setNewProj({
       name: "",
       code: "",
@@ -138,7 +211,6 @@ export default function App() {
     const { employeeId, projectId, percentage } = newAlloc;
     if (!employeeId || !projectId || percentage <= 0) return;
     const cur = totalAlloc(employeeId);
-    // edit functionality removed — always create a new allocation
     if (
       allocations.find(
         (a) => a.employeeId === employeeId && a.projectId === projectId,
@@ -153,11 +225,39 @@ export default function App() {
       );
       return;
     }
-    // create locally; consider POST /allocations to backend
-    setAllocations((p) => [
-      ...p,
-      { id: uid(), employeeId, projectId, percentage },
-    ]);
+    (async () => {
+      try {
+        const body = {
+          employeeId: Number(employeeId),
+          projectId: Number(projectId),
+          allocationPercent: Number(percentage),
+          roleInProject: "Developer",
+          startDate: null,
+          endDate: null,
+        };
+        const res = await fetch(`${API_BASE}/allocations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Failed to create allocation");
+        const json = await res.json();
+        setAllocations((p) => [
+          ...p,
+          {
+            id: String(json.id),
+            employeeId: String(json.employeeId),
+            projectId: String(json.projectId),
+            percentage: json.allocationPercent,
+          },
+        ]);
+      } catch (e) {
+        setAllocations((p) => [
+          ...p,
+          { id: uid(), employeeId, projectId, percentage },
+        ]);
+      }
+    })();
     setNewAlloc({ employeeId: "", projectId: "", percentage: 20 });
     setAllocError("");
     setShowAddAlloc(false);
@@ -167,8 +267,7 @@ export default function App() {
   useEffect(() => {
     async function load() {
       try {
-        const API_BASE =
-          import.meta.env.VITE_API_BASE || "http://localhost:8081";
+        // const API_BASE is defined at component top
         const [empRes, projRes, allocRes] = await Promise.all([
           fetch(`${API_BASE}/employees`),
           fetch(`${API_BASE}/projects`),
@@ -193,7 +292,7 @@ export default function App() {
               name: p.projectName || p.name || "",
               code: p.projectCode || p.code || "",
               client: p.customer || p.client || "",
-              status: normalizeProjectStatus(p.status),
+              status: normalizeProjectStatus(String(p.status)),
               color:
                 p.color ||
                 projectColor(p.projectCode || p.code || p.projectName),
@@ -220,7 +319,21 @@ export default function App() {
   }, []);
 
   const deleteAllocation = (id: string) =>
-    setAllocations((p) => p.filter((a) => a.id !== id));
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/allocations/${id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setAllocations((p) => p.filter((a) => a.id !== id));
+        } else {
+          // fallback to local
+          setAllocations((p) => p.filter((a) => a.id !== id));
+        }
+      } catch (e) {
+        setAllocations((p) => p.filter((a) => a.id !== id));
+      }
+    })();
 
   const filteredEmps = employees.filter(
     (e) =>
@@ -254,6 +367,7 @@ export default function App() {
     { id: "projects", label: "Projects", icon: FolderKanban },
     { id: "allocations", label: "Allocations", icon: GitBranch },
     { id: "reports", label: "Reports", icon: BarChart2 },
+    { id: "ai", label: "AI", icon: AlertTriangle },
   ];
 
   const allocFormEmployee = employees.find((e) => e.id === newAlloc.employeeId);
@@ -368,6 +482,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            {/* AI header buttons removed due to prompt() issues and 400 errors. Use AI page instead. */}
             <div className="text-right">
               <div className="text-xs text-slate-400">Avg Utilization</div>
               <div
@@ -456,6 +571,8 @@ export default function App() {
                 empAllocs={empAllocs}
               />
             )}
+
+            {view === "ai" && <RiskView />}
           </div>
         </div>
       </main>

@@ -1,8 +1,10 @@
+import React from "react";
 import { Plus, Search, Trash2, Edit } from "lucide-react";
 import { AllocBar } from "../../components/ui/AllocBar";
 import { DEPT_COLORS } from "../../data/deptColors";
 import { allocColor, initials } from "../../lib/resource";
 import type { Allocation, Employee, Project } from "../../types/resource";
+import Pagination from "../../components/ui/Pagination";
 
 interface EmployeesViewProps {
   employees: Employee[];
@@ -31,6 +33,14 @@ export function EmployeesView({
   setShowAddEmp,
   onEditEmployee,
 }: EmployeesViewProps) {
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(10);
+  const totalPages = Math.max(1, Math.ceil(filteredEmps.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const paged = filteredEmps.slice(start, start + pageSize);
+  React.useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [totalPages]);
   return (
     <div className="w-full max-w-6xl mx-auto space-y-5">
       <div className="rounded-2xl border border-slate-100 bg-white/90 p-4 shadow-sm sm:p-6 lg:p-8">
@@ -87,7 +97,7 @@ export function EmployeesView({
               </tr>
             </thead>
             <tbody>
-              {filteredEmps.map((emp, i) => {
+              {paged.map((emp, i) => {
                 const t = totalAlloc(emp.id);
                 const color = allocColor(t);
                 const ea = empAllocs(emp.id);
@@ -184,6 +194,32 @@ export function EmployeesView({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="md:hidden" />
+        <div className="hidden md:block">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="text-sm text-slate-500">Show</div>
+            <div className="flex items-center gap-2">
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="px-2 py-1 border rounded"
+              >
+                {[5, 10, 20, 50].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <div className="text-sm text-slate-500">per page</div>
+            </div>
+          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
 
         <div className="md:hidden divide-y divide-slate-100">

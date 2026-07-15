@@ -25,5 +25,6 @@ export type View =
   | "employees"
   | "projects"
   | "allocations"
-  | "reports";
+  | "reports"
+  | "ai";
 export type ReportTab = "available" | "overloaded";
